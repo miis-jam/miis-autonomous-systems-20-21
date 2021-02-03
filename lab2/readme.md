@@ -1,5 +1,20 @@
 
-# Autonomous Systems - Lab 2
+# Autonomous Systems - Lab 2 - Modeling in SAT
+
+# Getting Started
+
+The fastest way to proceed for this lab session is:
+1. Install any SAT solver e.g. from some [recent competition](http://www.satcompetition.org/).
+   Other simple alternatives could be the _Glucose_ or the _Minisat_ solvers.
+1. Write a script that generates the propositional formula describing the Sudoku instance you are dealing with, in CNF.
+1. Print your representation of the formula into a file that follows the
+   [DIMACS CNF format](https://people.sc.fsu.edu/~jburkardt/data/cnf/cnf.html), the standard
+   format accepted by most SAT solvers.
+1. Invoke the SAT solver you installed on the above file.
+1. Parse the output of the SAT solver (an assignment of truth values to propositions printed in some form or another,
+   depending on the solver you use) and convert it back into a solution to the original Sudoku problem.
+
+We detail some of these steps below.
 
 # Installing a SAT solver
 
@@ -13,11 +28,15 @@ with:
 
 # Getting started with the coding
 
+In the interest of time, we provide you with some code skeleton so that
+you can focus on the interesting part of the submission, implementing the
+propositional theory generator.
+
 Clone this repository:
 
-    git clone https://github.com/aig-upf/miis-autonomous-systems-19-20.git
-    cd miis-autonomous-systems-19-20/lab2
-    
+    git clone https://github.com/aig-upf/miis-autonomous-systems-20-21.git
+    cd miis-autonomous-systems-20-21/lab2
+  
 You will see some Python code to get you started. 
 It basically will handle command-line arguments for you, parse Sudoku boards
 into a more meaningful matrix-like representation, write files in the 
@@ -52,7 +71,6 @@ where integer numbers are used to encode the literals. You can see a full descri
 I have also uploaded a sample CNF I obtain with my (private :-)) solution to the assignment: see file [sample_cnf.cnf](sample_cnf.cnf).
 This is the CNF that corresponds to the Sudoku board
 `.......1.4.........2...........5.4.7..8...3....1.9....3..4..2...5.1........8.6...`.
-I wouldn't waste time trying to "reverse-engineer" the formula, as the format is very low-level.
 You can call minisat, or whatever SAT solver you prefer, on this file:
 
         $ minisat sample_cnf.cnf 
