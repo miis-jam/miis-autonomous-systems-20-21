@@ -113,6 +113,8 @@ def generate_theory(board, verbose):
                 i, j = subMatrixToGlobalCoord(S, l, size)
                 for m in range(l+1, size):
                     n, o = subMatrixToGlobalCoord(S, m, size)
+                    if n==i or o==j:
+                        continue
                     clauses.append(
                         [-generateVariableID(i, j, K, size), -generateVariableID(n, o, K, size)])
 
