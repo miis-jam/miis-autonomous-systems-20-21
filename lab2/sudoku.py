@@ -38,7 +38,7 @@ def generate_theory(board, verbose):
     clauses = []
     variables = {}
 
-    # TODO
+    
 
     return clauses, variables, size
 
