@@ -31,6 +31,8 @@ def print_solution(solution):
 # def compute_solution(sat_assignment, variables, size):
 def compute_solution(sat_assignment, size):
     solution = []
+
+    # print(sat_assignment)
     
     for l in range(size*size):
         i= int(l/size) +1
@@ -123,7 +125,7 @@ def generate_theory(board, verbose):
                 for l in range(k+1, size+1) :
                     clauses.append(
                         [-generateVariableID(I, J, k, size), -generateVariableID(I, J, l, size)])
-                        
+
     ##Include all the known truth values to the clauses
     for x,y in board.all_coordinates():
         value = board.value(x, y)
@@ -147,11 +149,32 @@ def subMatrixToGlobalCoord(S, l, n):
 
 def count_number_solutions(board, verbose=False):
     count = 0
-
-    # TODO
+    
+    clauses,size= generate_theory(board,verbose)
+    numvars = pow(size, 3)
+    filename = "theory.cnf"
+    end=False
+    while not end:
+        save_dimacs_cnf(numvars, clauses, filename, verbose)
+        result, sat_assignment = solve(filename, verbose)
+        if result != "SAT":
+            end=True
+        else:            
+            count +=1
+            clauses.append(excludeLastSolutionClause(sat_assignment))
+            
 
     print("Number of solutions: {}".format(count))
 
+def excludeLastSolutionClause(sat_assignment):
+   
+    clause=[]
+    for key, value in sat_assignment.items():
+        if value:
+            clause.append(-key)
+        
+   
+    return clause
 
 def find_one_solution(board, verbose=False):
     # clauses, variables, size = generate_theory(board, verbose)

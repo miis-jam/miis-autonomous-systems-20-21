@@ -28,8 +28,8 @@ def main(argv):
         times.append(timeit.timeit(lambda: find_one_solution(Board(board), verbose=False), number=1))
         if i == args.n:
             break
-    print(f"Runs: {args.n}, Total time (sec): {sum(times):.3f}, Max: {max(times):.3f},"
-          f" Min: {min(times):.3f}, Avg: {statistics.mean(times):.3f}, stdev: {statistics.stdev(times):.3f}")
+    print("Runs: {}, Total time (sec): {}, Max: {},".format(args.n, sum(times), max(times)) +
+          " Min: {}, Avg: {}, stdev: {}".format(min(times), statistics.mean(times), statistics.stdev(times)))
 
 
 if __name__ == "__main__":
