@@ -177,13 +177,13 @@ def excludeLastSolutionClause(sat_assignment):
     whe need to add not(solution) to the previous set of clauses in CNF. Undestandig 
     the solution as a conjunction of individual clauses, (P^Q^R....) we can transform
     it to a single CNF clause with the Morgan property not(A and B) = (not A or not B)"""
-    
-      clause = []
-       for key, value in sat_assignment.items():
-            if value:  # For each true value of the solution, append to the clause the negated variable
-                clause.append(-key)
 
-        return clause
+    clause = []
+    for key, value in sat_assignment.items():
+        if value:  # For each true value of the solution, append to the clause the negated variable
+            clause.append(-key)
+
+    return clause
 
 
 def find_one_solution(board, verbose=False):
