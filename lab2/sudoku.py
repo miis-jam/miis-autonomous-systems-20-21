@@ -22,7 +22,7 @@ def parse_arguments(argv):
 
 def print_solution(solution):
     """ Print a (hopefully solved) Sudoku board represented as a list of 81 integers in visual form. """
-    #print(f'Solution: {"".join(map(str, solution))}')
+    # print(f'Solution: {"".join(map(str, solution))}')
     print("Solution: {}".format({"".join(map(str, solution))}))
     print('Solution in board form:')
     Board(solution).print_board()
@@ -33,26 +33,24 @@ def compute_solution(sat_assignment, size):
     solution = []
 
     # print(sat_assignment)
-    
-    for l in range(size*size):
-        i= int(l/size) +1
-        j= l%size +1
 
-        found=False
-        k=1        
+    for l in range(size*size):
+        i = int(l/size) + 1
+        j = l % size + 1
+
+        found = False
+        k = 1
         while(not found):
-            if sat_assignment.get(generateVariableID(i, j, k, size))==1 :
-                found=True
+            if sat_assignment.get(generateVariableID(i, j, k, size)) == 1:
+                found = True
             else:
-                k+=1
-        
-        if found: 
+                k += 1
+
+        if found:
             solution.append(k)
         else:
             print("The solution mapping has failed")
-            return []            
-
-
+            return []
 
     return solution
 
@@ -62,7 +60,7 @@ def generate_theory(board, verbose):
     size = board.size()
     clauses = []
 
-    #variables = {} ##not used
+    # variables = {} ##not used
 
     # Generate clauses
 
@@ -104,7 +102,7 @@ def generate_theory(board, verbose):
             # Clause: The number k must appear at least once in submatrix S
             clause = []
             for l in range(0, size):
-                i,j= subMatrixToGlobalCoord(S,l,size)
+                i, j = subMatrixToGlobalCoord(S, l, size)
 
                 clause.append(generateVariableID(i, j, K, size))
 
@@ -118,21 +116,22 @@ def generate_theory(board, verbose):
                     clauses.append(
                         [-generateVariableID(i, j, K, size), -generateVariableID(n, o, K, size)])
 
-    ##Clause: In each cell one number at most is allowed to appear
+    # Clause: In each cell one number at most is allowed to appear
     for I in range(1, size+1):
         for J in range(1, size+1):
             for k in range(1, size):
-                for l in range(k+1, size+1) :
+                for l in range(k+1, size+1):
                     clauses.append(
                         [-generateVariableID(I, J, k, size), -generateVariableID(I, J, l, size)])
 
-    ##Include all the known truth values to the clauses
-    for x,y in board.all_coordinates():
+    # Include all the known truth values to the clauses
+    for x, y in board.all_coordinates():
         value = board.value(x, y)
         if value != 0:
-            clauses.append([generateVariableID(x+1,y+1,value,size)])
-   #return clauses, variables, size
+            clauses.append([generateVariableID(x+1, y+1, value, size)])
+   # return clauses, variables, size
     return clauses, size
+
 
 def generateVariableID(i, j, k, n):
     """ Generate a numerical id for a state variable of the form (Pijk) for convinience when using SAT solver """
@@ -141,43 +140,54 @@ def generateVariableID(i, j, k, n):
 
 def subMatrixToGlobalCoord(S, l, n):
     """ Transform submatrix coordinates (S=submatrix id, l= local position in submatrix) to global board coordinates i,j """
-    b=int(sqrt(n))
+    b = int(sqrt(n))
     i = int(l/b) + b*int(S/b) + 1
-    j = l%b + b*(S%b) + 1
+    j = l % b + b*(S % b) + 1
 
-    return i,j
+    return i, j
+
 
 def count_number_solutions(board, verbose=False):
+
     count = 0
-    
-    clauses,size= generate_theory(board,verbose)
+    # Compute the static clauses (i.e. the sudoku rules and the input board)
+    clauses, size = generate_theory(board, verbose)
     numvars = pow(size, 3)
     filename = "theory.cnf"
-    end=False
+    end = False
     while not end:
+        # Save clauses in to a file
         save_dimacs_cnf(numvars, clauses, filename, verbose)
-        result, sat_assignment = solve(filename, verbose)
+        result, sat_assignment = solve(filename, verbose)  # Find the result
+        # If there is not a result (i.e. sentence is unsatisfiable). Stop counting
         if result != "SAT":
-            end=True
-        else:            
-            count +=1
+            end = True
+        else:
+            count += 1
+            # Exclude the obtained solution from the next iteration by adding a clause (not(solution))
             clauses.append(excludeLastSolutionClause(sat_assignment))
-            
 
     print("Number of solutions: {}".format(count))
 
+
 def excludeLastSolutionClause(sat_assignment):
-   
-    clause=[]
-    for key, value in sat_assignment.items():
-        if value:
-            clause.append(-key)
-        
-   
-    return clause
+    """ Generate a clause in order to exclude a solution from the next SAT calculation"""
+    
+    """In order to impose a exclusion of this solution for the next SAT computation,
+    whe need to add not(solution) to the previous set of clauses in CNF. Undestandig 
+    the solution as a conjunction of individual clauses, (P^Q^R....) we can transform
+    it to a single CNF clause with the Morgan property not(A and B) = (not A or not B)"""
+    
+      clause = []
+       for key, value in sat_assignment.items():
+            if value:  # For each true value of the solution, append to the clause the negated variable
+                clause.append(-key)
+
+        return clause
+
 
 def find_one_solution(board, verbose=False):
-    # clauses, variables, size = generate_theory(board, verbose)
+     # clauses, variables, size = generate_theory(board, verbose)
     clauses, size = generate_theory(board, verbose)
     # return solve_sat_problem(clauses, "theory.cnf", size, variables, verbose)
     return solve_sat_problem(clauses, "theory.cnf", size, verbose)
@@ -186,15 +196,15 @@ def find_one_solution(board, verbose=False):
 # def solve_sat_problem(clauses, filename, size, variables, verbose):
 def solve_sat_problem(clauses, filename, size, verbose):
     # save_dimacs_cnf(variables, clauses, filename, verbose)
-    numvars=pow(size,3)
-    save_dimacs_cnf(numvars,clauses, filename, verbose)
+    numvars = pow(size, 3)
+    save_dimacs_cnf(numvars, clauses, filename, verbose)
     result, sat_assignment = solve(filename, verbose)
     if result != "SAT":
         if verbose:
             print("The given board is not solvable")
         return None
     # solution = compute_solution(sat_assignment, variables, size)
-    solution = compute_solution(sat_assignment,size)
+    solution = compute_solution(sat_assignment, size)
     if verbose:
         print_solution(solution)
     return sat_assignment
