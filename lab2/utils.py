@@ -32,19 +32,24 @@ def solve(cnf_filename, verbose):
     return parse_minisat_output(output)
 
 
-def save_dimacs_cnf(variables, clauses, filename, verbose):
-    numvars = len(variables)
+# def save_dimacs_cnf(variables, clauses, filename, verbose):
+def save_dimacs_cnf(numvars, clauses, filename, verbose):
+    #numvars = len(variables)
     numclauses = len(clauses)
 
     if verbose:
-        print(f'Writing SAT problem with {numvars} vars and {numclauses} clauses to file "{filename}"')
+        print("Writing SAT problem with {}".format(numvars) +
+              " vars and {} clauses to file ".format(numclauses)+"{}".format(filename))
 
     with open(filename, "w") as output:
-        print("c CNF encoding generated on {}".format(time.strftime("%Y%m%d %H:%M:%S", time.localtime())), file=output)
-        print(f"p cnf {numvars} {numclauses}", file=output)  # p cnf nbvar nbclauses
+        print("c CNF encoding generated on {}".format(
+            time.strftime("%Y%m%d %H:%M:%S", time.localtime())), file=output)
+        print("p cnf {} {}".format(
+            numvars, numclauses), file=output)  # p cnf nbvar nbclauses
         for clause in clauses:
             print(print_clause(clause), file=output)
 
 
 def print_clause(literals):
-    return " ".join(map(str, literals)) + " 0"  # Dimacs clauses are lines ending with a 0
+    # Dimacs clauses are lines ending with a 0
+    return " ".join(map(str, literals)) + " 0"
