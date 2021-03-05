@@ -1,6 +1,6 @@
 ;Header and description
 
-(define (domain monkeyDomain)
+(define (domain MonkeyDomain)
 
     ;remove requirements that are not needed
     (:requirements :strips)
