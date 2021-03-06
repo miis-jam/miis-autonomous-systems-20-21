@@ -1,7 +1,20 @@
 (define (problem MonkeyProblem)
     (:domain MonkeyDomain)
     (:objects
-        monkey banana-1 banana-2 banana-3 chair sq-1-1 sq-1-2 sq-1-3 sq-2-1 sq-2-2 sq-2-3 sq-3-1 sq-3-2 sq-3-3
+        monkey 
+        banana-1 
+        banana-2 
+        banana-3
+        chair 
+        sq-1-1 
+        sq-1-2 
+        sq-1-3 
+        sq-2-1 
+        sq-2-2 
+        sq-2-3 
+        sq-3-1 
+        sq-3-2 
+        sq-3-3
     )
 
     (:init
