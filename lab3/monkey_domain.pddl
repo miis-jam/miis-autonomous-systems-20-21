@@ -21,32 +21,75 @@
     ;define actions here
     (:action go
         :parameters (?subject ?from ?to)
-        :precondition (and (at ?subject ?from) (not (high ?subject)) (agent ?subject))
-        :effect (and (at ?subject ?to) (not (at ?subject ?from)))
+        :precondition (and 
+        (at ?subject ?from) 
+        (not (high ?subject)) 
+        (agent ?subject)
+        )
+        :effect (and 
+        (at ?subject ?to) 
+        (not (at ?subject ?from))
+        )
     )
 
     (:action climbUp
         :parameters (?subject ?object ?place)
-        :precondition (and (usable ?object) (not (high ?subject)) (at ?object ?place) (at ?subject ?place) (agent ?subject))
-        :effect (and (not (usable ?object)) (high ?subject))
+        :precondition (and 
+        (usable ?object) 
+        (not (high ?subject)) 
+        (at ?object ?place) 
+        (at ?subject ?place) 
+        (agent ?subject)
+        )
+        :effect (and 
+        (not (usable ?object)) 
+        (high ?subject)
+        )
     )
 
     (:action climbDown
         :parameters (?subject ?object ?place)
-        :precondition (and (not (usable ?object)) (high ?subject) (agent ?subject))
-        :effect (and (usable ?object) (not (high ?subject)))
+        :precondition (and 
+        (not (usable ?object)) 
+        (high ?subject) 
+        (agent ?subject)
+        )
+        :effect (and 
+        (usable ?object) 
+        (not (high ?subject))
+        )
     )
 
     (:action push
         :parameters (?subject ?object ?from ?to)
-        :precondition (and (usable ?object) (not (high ?subject)) (at ?object ?from) (at ?subject ?from) (agent ?subject))
-        :effect (and (at ?object ?to) (at ?subject ?to) (not (at ?object ?from)) (not (at ?subject ?from)))
+        :precondition (and 
+        (usable ?object) 
+        (not (high ?subject)) 
+        (at ?object ?from) 
+        (at ?subject ?from) 
+        (agent ?subject)
+        )
+        :effect (and 
+        (at ?object ?to) 
+        (at ?subject ?to) 
+        (not (at ?object ?from)) 
+        (not (at ?subject ?from))
+        )
     )
 
     (:action eat
         :parameters (?subject ?object ?place)
-        :precondition (and (high ?subject) (at ?object ?place) (at ?subject ?place) (not (eaten ?object)) (edible ?object) (agent ?subject))
-        :effect (and (eaten ?object))
+        :precondition (and 
+        (high ?subject) 
+        (at ?object ?place) 
+        (at ?subject ?place) 
+        (not (eaten ?object)) 
+        (edible ?object) 
+        (agent ?subject)
+        )
+        :effect (and 
+        (eaten ?object)
+        )
     )
     
 
