@@ -13,7 +13,7 @@ start_time = time.time()
 
 levels = range(1, 6)
 
-solver_path = "./downward/fast-downward.py --plan-file sas_plan --alias " + solver + " domain.pddl problem-out.pddl"
+solver_path = "./downward/fast-downward.py --overall-time-limit 60 --plan-file sas_plan --alias " + solver + " domain.pddl problem-out.pddl"
 
 for level in levels:
     filename = "./benchmarks/sasquatch/level%s.sok" %(level)
