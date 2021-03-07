@@ -9,56 +9,10 @@ def parse_arguments(argv):
     parser.add_argument("-i", help="Path to the file with the Sokoban instance.")
     return parser.parse_args(argv)
 
-class SokobanGame(object):
-    """ A Sokoban Game. """
-    def __init__(self, string):
-        """ Create a Sokoban game object from a string representation such as the one defined in
-            http://sokobano.de/wiki/index.php?title=Level_format
-        """
-        lines = string.split('\n')
-        self.h, self.w = len(lines), max(len(x) for x in lines)
-        self.player = None
-        self.walls = set()
-        self.boxes = set()
-        self.goals = set()
-        for y, line in enumerate(lines, 0):
-            for x, char in enumerate(line, 0):
-                if char == '#':  # Wall
-                    self.walls.add((x,y))
-                elif char == '@':  # Player
-                    assert self.player is None
-                    self.player = (x,y)
-                elif char == '+':  # Player on goal square
-                    assert self.player is None
-                    self.player = (x,y)
-                    self.goals.add((x,y))
-                elif char == '$':  # Box
-                    self.boxes.add((x,y))
-                elif char == '*':  # Box on goal square
-                    self.boxes.add((x,y))
-                    self.goals.add((x,y))
-                elif char == '.':  # Goal square
-                    self.goals.add((x,y))
-                elif char == ' ':  # Space
-                    pass  # No need to do anything
-                else:
-                    raise ValueError(f'Unknown character "{char}"')
-
-    def is_wall(self, x, y):
-        """ Whether the given coordinate is a wall. """
-        return (x, y) in self.walls
-
-    def is_box(self, x, y):
-        """ Whether the given coordinate has a box. """
-        return (x, y) in self.boxes
-
-    def is_goal(self, x, y):
-        """ Whether the given coordinate is a goal location. """
-        return (x, y) in self.goals
-
-
 def intToLoc(i,j):
     return "x%sy%s " % (i, j)
+
+DIR = ["n", "s", "e", "w"]
 
 def getAdjacent(i, j, dir):
     if (dir == "n"):
@@ -71,8 +25,6 @@ def getAdjacent(i, j, dir):
         return (i+1, j)
     else:
         print("ERROR in direction")
-
-DIR = ["n", "s", "e", "w"]
 
 def getProblemInstance(board):
     resultingInstance = "(define (problem sokoban-easy) (:domain sokoban)\n(:objects \n"
@@ -147,30 +99,6 @@ def getProblemInstance(board):
 
     return resultingInstance
 
-def main(argv):
-    args = parse_arguments(argv)
-    with open(args.i, 'r') as file:
-        board = SokobanGame(file.read().rstrip('\n'))
-    # TODO - Some of the things that you need to do:
-    #  1. (Previously) Have a domain.pddl file somewhere in disk that represents the Sokoban actions and predicates.
-    #  2. Generate an instance.pddl file from the given board, and save it to disk.
-    #  3. Invoke some classical planner to solve the generated instance.
-    #  3. Check the output and print the plan into the screen in some readable form.
-    
-    resultingInstance = getProblemInstance(board)
-
-    """ solve """
-    f = open('problem-out.pddl', "w")
-    f.write(resultingInstance)
-    f.close()
-
-    os.system("python ./downward/fast-downward.py domain.pddl problem-out.pddl --search astar(lmcut())")
-
-    """ read solution """
-    f = open('sas_plan', 'r')
-    lines = f.read().split("\n")
-    prettyPrintSolution(lines)
-
 
 def extractCoords(string):
     result = []
@@ -193,15 +121,6 @@ def getDirection(string):
     elif (y1 > y2):
         return "Move up\n"
 
-"""
-(teleport x4y4 x3y3 tele)
-(move-box-vertical x3y3 x3y4 x3y5)
-(move-horizontal x3y4 x2y4)
-(move-box-vertical x2y4 x2y5 x2y6)
-(move-vertical x2y5 x2y4)
-(move-horizontal x2y4 x3y4)
-(move-horizontal x3y4 x4y4)
-"""
 def prettyPrintSolution(solution):
     prettySol = ""
     for line in solution:
@@ -216,6 +135,79 @@ def prettyPrintSolution(solution):
         elif "cost" in line:
             prettySol += line[2:-12]
     print(prettySol)
+
+
+class SokobanGame(object):
+    """ A Sokoban Game. """
+    def __init__(self, string):
+        """ Create a Sokoban game object from a string representation such as the one defined in
+            http://sokobano.de/wiki/index.php?title=Level_format
+        """
+        lines = string.split('\n')
+        self.h, self.w = len(lines), max(len(x) for x in lines)
+        self.player = None
+        self.walls = set()
+        self.boxes = set()
+        self.goals = set()
+        for y, line in enumerate(lines, 0):
+            for x, char in enumerate(line, 0):
+                if char == '#':  # Wall
+                    self.walls.add((x,y))
+                elif char == '@':  # Player
+                    assert self.player is None
+                    self.player = (x,y)
+                elif char == '+':  # Player on goal square
+                    assert self.player is None
+                    self.player = (x,y)
+                    self.goals.add((x,y))
+                elif char == '$':  # Box
+                    self.boxes.add((x,y))
+                elif char == '*':  # Box on goal square
+                    self.boxes.add((x,y))
+                    self.goals.add((x,y))
+                elif char == '.':  # Goal square
+                    self.goals.add((x,y))
+                elif char == ' ':  # Space
+                    pass  # No need to do anything
+                else:
+                    raise ValueError(f'Unknown character "{char}"')
+
+    def is_wall(self, x, y):
+        """ Whether the given coordinate is a wall. """
+        return (x, y) in self.walls
+
+    def is_box(self, x, y):
+        """ Whether the given coordinate has a box. """
+        return (x, y) in self.boxes
+
+    def is_goal(self, x, y):
+        """ Whether the given coordinate is a goal location. """
+        return (x, y) in self.goals
+
+def main(argv):
+    args = parse_arguments(argv)
+    with open(args.i, 'r') as file:
+        board = SokobanGame(file.read().rstrip('\n'))
+    # TODO - Some of the things that you need to do:
+    #  1. (Previously) Have a domain.pddl file somewhere in disk that represents the Sokoban actions and predicates.
+    #  2. Generate an instance.pddl file from the given board, and save it to disk.
+    #  3. Invoke some classical planner to solve the generated instance.
+    #  3. Check the output and print the plan into the screen in some readable form.
+    
+    resultingInstance = getProblemInstance(board)
+
+    """ solve """
+    f = open('problem-out.pddl', "w")
+    f.write(resultingInstance)
+    f.close()
+
+    os.system("python ./downward/fast-downward.py domain.pddl problem-out.pddl --search astar(lmcut())")
+    #os.system("python ./downward/fast-downward.py domain.pddl problem-out.pddl --search seq-sat-lama-2011")
+
+    """ read solution """
+    f = open('sas_plan', 'r')
+    lines = f.read().split("\n")
+    prettyPrintSolution(lines)
 
 if __name__ == "__main__":
     main(sys.argv[1:])
