@@ -121,7 +121,7 @@ def getDirection(string):
     elif (y1 > y2):
         return "Move up\n"
 
-def prettyPrintSolution(solution):
+def prettySolution(solution):
     prettySol = ""
     for line in solution:
         if "move-horizontal" in line or "move-box-horizontal" in line:
@@ -134,7 +134,7 @@ def prettyPrintSolution(solution):
             prettySol += "Teleport to position (%s, %s)\n" % (x, y)
         elif "cost" in line:
             prettySol += line[2:-12]
-    print(prettySol)
+    return prettySol
 
 
 class SokobanGame(object):
@@ -201,13 +201,20 @@ def main(argv):
     f.write(resultingInstance)
     f.close()
 
-    os.system("python ./downward/fast-downward.py domain.pddl problem-out.pddl --search astar(lmcut())")
-    #os.system("python ./downward/fast-downward.py domain.pddl problem-out.pddl --search seq-sat-lama-2011")
+    #os.system("python ./downward/fast-downward.py domain.pddl problem-out.pddl --search astar(lmcut())")
+    os.system("python ./downward/fast-downward.py --alias seq-sat-lama-2011 domain.pddl problem-out.pddl --plan-file sas_plan")
 
     """ read solution """
     f = open('sas_plan', 'r')
     lines = f.read().split("\n")
-    prettyPrintSolution(lines)
+    f.close()
+    prettySol = prettySolution(lines)
+    print(prettySol)
+
+    """ save solution """
+    f = open('final-plan.txt', 'w')
+    f.write(prettySol)
+    f.close()
 
 if __name__ == "__main__":
     main(sys.argv[1:])
