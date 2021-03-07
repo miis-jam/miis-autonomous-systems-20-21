@@ -5,15 +5,15 @@ import glob, re, time
 
 from sokobanUbuntu import *
 
-solver = "seq-sat-fd-autotune-1"
+solver = "seq-sat-lama-2011"
 
 solved = []
 cost = []
 start_time = time.time()
 
-levels = range(1, 26)
+levels = range(1, 6)
 
-solver_path = "./downward/fast-downward.py domain.pddl problem-out.pddl --overall-time-limit 60 --plan-file sas_plan --alias " + solver
+solver_path = "./downward/fast-downward.py --plan-file sas_plan --alias " + solver + " domain.pddl problem-out.pddl"
 
 for level in levels:
     filename = "./benchmarks/sasquatch/level%s.sok" %(level)
@@ -29,7 +29,6 @@ for level in levels:
     f.close()
 
     # try to solve in < 60 seconds
-    
     #os.system("./downward/fast-downward.py --overall-time-limit 60 --plan-file sas_plan --alias seq-sat-fdss-2 domain.pddl problem-out.pddl")
     os.system(solver_path)
     
