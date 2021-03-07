@@ -78,14 +78,14 @@ class pddlConverter(object):
     def generateAdjV(self, loc1, loc2):
         self.init_state.append("(adj_vertical "+loc1+" "+loc2+")")
 
-    # def generatePushable(self, name):
-    #     self.init_state.append("(pushable "+name+")")
+    def generatePushable(self, name):
+        self.init_state.append("(pushable "+name+")")
 
     def generateOccupied(self, loc):
         self.init_state.append("(occupied "+loc+")")
 
-    # def generateAlive(self, name):
-    #     self.init_state.append("(alive "+name+")")
+    def generateAlive(self, name):
+        self.init_state.append("(alive "+name+")")
 
     def generateTeleportAvaliable(self, name):
         self.init_state.append("(teleport_avaliable "+name+")")
@@ -94,15 +94,15 @@ class pddlConverter(object):
         name = "box-"+str(x)+"-"+str(y)
         loc = "sq-"+str(x)+"-"+str(y)
 
-        self.problem_objects.append(name+" - box")
+        self.problem_objects.append(name)
 
         self.generateAt(name, loc)
         self.generateOccupied(loc)
-        # self.generatePushable(name)
+        self.generatePushable(name)
 
     def writeSquare(self, x, y):
         name = "sq-"+str(x)+"-"+str(y)
-        self.problem_objects.append(name+" - location")
+        self.problem_objects.append(name)
 
     # def writeWall(self, x, y):
     #     loc = "sq-"+str(x)+"-"+str(y)
@@ -116,8 +116,8 @@ class pddlConverter(object):
         # One single agent is assumed
         name = "agent"
         loc = "sq-"+str(x)+"-"+str(y)
-        self.problem_objects.append(name+" - agent")
-        # self.generateAlive(name)
+        self.problem_objects.append(name)
+        self.generateAlive(name)
         self.generateTeleportAvaliable(name)
         self.generateAt(name, loc)
 

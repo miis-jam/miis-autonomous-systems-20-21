@@ -1,38 +1,33 @@
 ;Header and description
 
-(define (domain TeleportingSokobanDomain)
+(define (domain TeleportingSokobanDomainWithoutTyping)
 
     ;remove requirements that are not needed
-    (:requirements :strips :typing :equality :negative-preconditions)
+    (:requirements :strips :equality :adl)
 
     ; un-comment following line if constants are needed
     ;(:constants )
 
-    (:types
-        thing location - object
-        agent box - thing
-    )
-
     (:predicates ;todo: define predicates here
-        (at ?what - thing ?where - location)
-        (adj_horizontal ?sq1 - location ?sq2 - location)
-        (adj_vertical ?sq1 - location ?sq2 - location)
-        ; (pushable ?what)
-        ; (alive ?who)
-        (occupied ?sq - location) ;there is a box in the square
-        (teleport_avaliable ?who - agent)
+        (at ?what ?where)
+        (adj_horizontal ?sq1 ?sq2)
+        (adj_vertical ?sq1 ?sq2)
+        (pushable ?what)
+        (alive ?who)
+        (occupied ?sq) ;there is a box in the square
+        (teleport_avaliable ?who)
     )
 
     ; (:functions ;todo: define numeric functions here
     ; )
 
     (:action move_horizontal
-        :parameters (?who - agent ?from - location ?to - location)
+        :parameters (?who ?from ?to)
         :precondition (and
             (at ?who ?from)
             (adj_horizontal ?from ?to)
             (not (occupied ?to))
-            ; (alive ?who)
+            (alive ?who)
         )
         :effect (and
             (at ?who ?to)
@@ -41,12 +36,12 @@
         )
     )
     (:action move_vertical
-        :parameters (?who - agent ?from - location ?to - location)
+        :parameters (?who ?from ?to)
         :precondition (and
             (at ?who ?from)
             (adj_vertical ?from ?to)
             (not (occupied ?to))
-            ; (alive ?who)
+            (alive ?who)
         )
         :effect (and
             (at ?who ?to)
@@ -56,16 +51,16 @@
     )
 
     (:action push_horizontal
-        :parameters (?who - agent ?what - box ?where_who - location ?where_what - location ?to - location)
+        :parameters (?who ?what ?where_who ?where_what ?to)
         :precondition (and
             (at ?who ?where_who)
             (at ?what ?where_what)
             (adj_horizontal ?where_who ?where_what)
             (adj_horizontal ?where_what ?to)
             (not (= ?where_who ?to))
-            ; (pushable ?what)
+            (pushable ?what)
             (not (occupied ?to))
-            ; (alive ?who)
+            (alive ?who)
             (occupied ?where_what)
         )
         :effect (and
@@ -78,16 +73,16 @@
         )
     )
     (:action push_vertical
-        :parameters (?who - agent ?what - box ?where_who - location ?where_what - location ?to - location)
+        :parameters (?who ?what ?where_who ?where_what ?to)
         :precondition (and
             (at ?who ?where_who)
             (at ?what ?where_what)
             (adj_vertical ?where_who ?where_what)
             (adj_vertical ?where_what ?to)
             (not (= ?where_who ?to))
-            ; (pushable ?what)
+            (pushable ?what)
             (not (occupied ?to))
-            ; (alive ?who)
+            (alive ?who)
             (occupied ?where_what)
         )
         :effect (and
@@ -100,10 +95,10 @@
         )
     )
     (:action teleport
-        :parameters (?who - agent ?from - location ?to - location)
+        :parameters (?who ?from ?to)
         :precondition (and
             (teleport_avaliable ?who)
-            ; (alive ?who)
+            (alive ?who)
             (at ?who ?from)
             (not (occupied ?to))
 
