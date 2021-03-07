@@ -31,7 +31,7 @@ for level in levels:
     # try to solve in < 60 seconds
     
     #os.system("./downward/fast-downward.py --overall-time-limit 60 --plan-file sas_plan --alias seq-sat-fdss-2 domain.pddl problem-out.pddl")
-    os.system("./downward/fast-downward.py domain.pddl problem-out.pddl --overall-time-limit 60 --plan-file sas_plan --alias seq-sat-fd-autotune-1")
+    os.system(solver_path)
     
     numbers = []
     all_files = glob.glob("./sas_plan*")
