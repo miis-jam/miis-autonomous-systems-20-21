@@ -1,20 +1,16 @@
 #!/usr/bin/env python3
 
 import argparse
-import sys
-import codecs
-
+import sys, os
+import re
 
 def parse_arguments(argv):
     parser = argparse.ArgumentParser(description='Solve Sudoku problems.')
-    parser.add_argument(
-        "-i", help="Path to the file with the Sokoban instance.")
+    parser.add_argument("-i", help="Path to the file with the Sokoban instance.")
     return parser.parse_args(argv)
-
 
 class SokobanGame(object):
     """ A Sokoban Game. """
-
     def __init__(self, string):
         """ Create a Sokoban game object from a string representation such as the one defined in
             http://sokobano.de/wiki/index.php?title=Level_format
@@ -25,30 +21,28 @@ class SokobanGame(object):
         self.walls = set()
         self.boxes = set()
         self.goals = set()
-        for i, line in enumerate(lines, 0):
-            for j, char in enumerate(line, 0):
+        for y, line in enumerate(lines, 0):
+            for x, char in enumerate(line, 0):
                 if char == '#':  # Wall
-                    self.walls.add((i, j))
+                    self.walls.add((x,y))
                 elif char == '@':  # Player
                     assert self.player is None
-
-                    self.player = (i, j)
+                    self.player = (x,y)
                 elif char == '+':  # Player on goal square
                     assert self.player is None
-                    self.player = (i, j)
-                    self.goals.add((i, j))
+                    self.player = (x,y)
+                    self.goals.add((x,y))
                 elif char == '$':  # Box
-                    self.boxes.add((i, j))
+                    self.boxes.add((x,y))
                 elif char == '*':  # Box on goal square
-                    self.boxes.add((i, j))
-                    self.goals.add((i, j))
+                    self.boxes.add((x,y))
+                    self.goals.add((x,y))
                 elif char == '.':  # Goal square
-                    self.goals.add((i, j))
+                    self.goals.add((x,y))
                 elif char == ' ':  # Space
                     pass  # No need to do anything
                 else:
-                    print("unknown: ")
-                    # raise ValueError(f'Unknown character "{char}"')
+                    raise ValueError(f'Unknown character "{char}"')
 
     def is_wall(self, x, y):
         """ Whether the given coordinate is a wall. """
@@ -63,141 +57,165 @@ class SokobanGame(object):
         return (x, y) in self.goals
 
 
-class pddlConverter(object):
-    def __init__(self):
-        self.problem_objects = []
-        self.init_state = []
-        self.goal_state = []
+def intToLoc(i,j):
+    return "x%sy%s " % (i, j)
 
-    def generateAt(self, name, loc):
-        self.init_state.append("(at "+name+" "+loc+")")
+def getAdjacent(i, j, dir):
+    if (dir == "n"):
+        return (i, j-1)
+    elif (dir == "s"):
+        return (i, j+1)
+    elif (dir == "w"):
+        return (i-1, j)
+    elif (dir == "e"):
+        return (i+1, j)
+    else:
+        print("ERROR in direction")
 
-    def generateAdjH(self, loc1, loc2):
-        self.init_state.append("(adj_horizontal "+loc1+" "+loc2+")")
+DIR = ["n", "s", "e", "w"]
 
-    def generateAdjV(self, loc1, loc2):
-        self.init_state.append("(adj_vertical "+loc1+" "+loc2+")")
+def getProblemInstance(board):
+    resultingInstance = "(define (problem sokoban-easy) (:domain sokoban)\n(:objects \n"
+    
+    """objects"""
+    # first, make all locations
+    locations = ""
+    for y in range(0,board.h):
+        for x in range(0, board.w):
+            locations += intToLoc(x, y)
+        locations += "\n"
+    locations += " - location\n"
+    resultingInstance += locations
 
-    def generatePushable(self, name):
-        self.init_state.append("(pushable "+name+")")
+    # second, add teleporter, end objects & open init
+    resultingInstance += "tele - teleporter\n)\n\n(:init \n"
+    
+    """ init """
+    # specify agent position
+    resultingInstance += "(at-agent " + intToLoc(board.player[0], board.player[1]) + ")\n"
 
-    def generateOccupied(self, loc):
-        self.init_state.append("(occupied "+loc+")")
+    # specify target positions
+    targets = ""
+    for goal in board.goals:
+        targets += "(is-target " + intToLoc(goal[0], goal[1]) + ")\n"
+    resultingInstance += targets
 
-    def generateAlive(self, name):
-        self.init_state.append("(alive "+name+")")
+    # get walls
+    walls = ""
+    for wall in board.walls:
+        walls += "(is-wall " + intToLoc(wall[0], wall[1]) + ")\n"
+    resultingInstance += walls
 
-    def generateTeleportAvaliable(self, name):
-        self.init_state.append("(teleport_avaliable "+name+")")
+    # set boxes
+    boxes = ""
+    for box in board.boxes:
+        boxes += "(is-box " + intToLoc(box[0], box[1]) + ")\n"
+        if (board.is_goal(box[0], box[1])):
+            boxes += "(target-satisfied " + intToLoc(box[0], box[1]) + ")\n"
+    resultingInstance += boxes
 
-    def writeBox(self, x, y):
-        name = "box-"+str(x)+"-"+str(y)
-        loc = "sq-"+str(x)+"-"+str(y)
+    # set connections
+    connections_h = ""
+    connections_v = ""
+    for y in range(0, board.h):
+        for x in range(0, board.w):
+            if board.is_wall(x,y):
+                continue
+            # check for each part each direction (n, e, s, w)
+            for dir in DIR:
+                adj = getAdjacent(x,y,dir)
+                if (board.is_wall(adj[0], adj[1])):
+                    continue
+                # check boundaries
+                if (adj[0] < 0 or adj[1] < 0 or adj[0] >= board.w or adj[1] >= board.h):
+                    continue
+                if (dir == "n" or dir == "s"):
+                    connections_v += "(connected-v " + intToLoc(x, y) + " " + intToLoc(adj[0], adj[1]) + ")\n"
+                    #connections_v += "(connected-v " + intToLoc(adj[0], adj[1]) + " " + intToLoc(i, j) + ")\n"
+                else:
+                    connections_h += "(connected-h " + intToLoc(x, y) + " " + intToLoc(adj[0], adj[1]) + ")\n"
+                    #connections_h += "(connected-h " + intToLoc(adj[0], adj[1]) + " " + intToLoc(i, j) + ")\n"
+    resultingInstance += ";horizontal\n" + connections_h
+    resultingInstance += ";vertical\n" + connections_v
 
-        self.problem_objects.append(name)
+    """ goals """
+    resultingInstance += ")\n\n(:goal (and \n"
+    goals = ""
+    for goal in board.goals:
+        goals += "(target-satisfied " + intToLoc(goal[0], goal[1]) + ")\n"
+    resultingInstance += goals + "))\n)"
 
-        self.generateAt(name, loc)
-        self.generateOccupied(loc)
-        self.generatePushable(name)
-
-    def writeSquare(self, x, y):
-        name = "sq-"+str(x)+"-"+str(y)
-        self.problem_objects.append(name)
-
-    # def writeWall(self, x, y):
-    #     loc = "sq-"+str(x)+"-"+str(y)
-    #     self.generateOccupied(loc)
-
-    def writeGoal(self, x, y):
-        loc = "sq-"+str(x)+"-"+str(y)
-        self.goal_state.append("(occupied "+loc+")")
-
-    def writeAgent(self, x, y):
-        # One single agent is assumed
-        name = "agent"
-        loc = "sq-"+str(x)+"-"+str(y)
-        self.problem_objects.append(name)
-        self.generateAlive(name)
-        self.generateTeleportAvaliable(name)
-        self.generateAt(name, loc)
-
-    def writeAdjH(self, x1, y1, x2, y2):
-        loc1 = "sq-"+str(x1)+"-"+str(y1)
-        loc2 = "sq-"+str(x2)+"-"+str(y2)
-        self.generateAdjH(loc1, loc2)
-
-    def writeAdjV(self, x1, y1, x2, y2):
-        loc1 = "sq-"+str(x1)+"-"+str(y1)
-        loc2 = "sq-"+str(x2)+"-"+str(y2)
-        self.generateAdjV(loc1, loc2)
-
+    return resultingInstance
 
 def main(argv):
     args = parse_arguments(argv)
-
-    with codecs.open(args.i, 'r', "utf-8") as file:
+    with open(args.i, 'r') as file:
         board = SokobanGame(file.read().rstrip('\n'))
-
     # TODO - Some of the things that you need to do:
     #  1. (Previously) Have a domain.pddl file somewhere in disk that represents the Sokoban actions and predicates.
     #  2. Generate an instance.pddl file from the given board, and save it to disk.
     #  3. Invoke some classical planner to solve the generated instance.
     #  3. Check the output and print the plan into the screen in some readable form.
-    converter = pddlConverter()
-    for x in range(board.h):
-        for y in range(board.w):
+    
+    resultingInstance = getProblemInstance(board)
 
-            if(board.is_wall(x, y)):
-                # converter.writeWall(x, y)
-                continue
-            else:
-                converter.writeSquare(x, y)
-                if((not board.is_wall(x, y+1)) and (y+1 < board.w)):
-                    converter.writeAdjH(x, y, x, y+1)
-                    converter.writeAdjH(x, y+1, x, y)
-                if((not board.is_wall(x+1, y)) and (x+1 < board.h)):
-                    converter.writeAdjV(x, y, x+1, y)
-                    converter.writeAdjV(x+1, y, x, y)
-                if board.is_box(x, y):
-                    converter.writeBox(x, y)
-                elif board.is_goal(x, y):
-                    converter.writeGoal(x, y)
-                elif x == board.player[0] and y == board.player[1]:
-                    converter.writeAgent(x, y)
-                else:
-                    continue
-    filename = "sokoban_problem.pddl"
-    with open(filename, "w") as output:
-        # Write problem header
-        print(
-            "(define (problem SokobanProblem) \n (:domain TeleportingSokobanDomain)\n", file=output)
-        # Write objects block
-        print(
-            "(:objects \n", file=output)  # objects header
-        for obj in converter.problem_objects:
-            print(obj, file=output)  # objects
-        print(
-            ") \n", file=output)  # objects closure
+    """ solve """
+    f = open('problem-out.pddl', "w")
+    f.write(resultingInstance)
+    f.close()
 
-        # Write init block
-        print(
-            "(:init \n", file=output)  # init header
-        for state in converter.init_state:
-            print(state, file=output)  # initial states
-        print(
-            ") \n", file=output)  # init closure
+    os.system("python ./downward/fast-downward.py domain.pddl problem-out.pddl --search astar(lmcut())")
 
-        # Write goal block
-        print(
-            "(:goal \n (and \n", file=output)  # goal header
-        for goal in converter.goal_state:
-            print(goal, file=output)  # goal states
-        print(
-            ") \n ) \n", file=output)  # goal closure
+    """ read solution """
+    f = open('sas_plan', 'r')
+    lines = f.read().split("\n")
+    prettyPrintSolution(lines)
 
-        # Write problem closure
-        print("\n)", file=output)
 
+def extractCoords(string):
+    result = []
+    numbers = re.findall(r'\d+', string)
+    for i in range(0, len(numbers), 2):
+        coords = (numbers[i], numbers[i+1])
+        result.append(coords)
+    return result
+
+def getDirection(string):
+    coords = extractCoords(string)
+    x1,y1 = coords[0]
+    x2,y2 = coords[1]
+    if (x1 < x2):
+        return "Move right\n"
+    elif (x1 > x2):
+        return "Move left\n"
+    elif (y1 < y2):
+        return "Move down\n"
+    elif (y1 > y2):
+        return "Move up\n"
+
+"""
+(teleport x4y4 x3y3 tele)
+(move-box-vertical x3y3 x3y4 x3y5)
+(move-horizontal x3y4 x2y4)
+(move-box-vertical x2y4 x2y5 x2y6)
+(move-vertical x2y5 x2y4)
+(move-horizontal x2y4 x3y4)
+(move-horizontal x3y4 x4y4)
+"""
+def prettyPrintSolution(solution):
+    prettySol = ""
+    for line in solution:
+        if "move-horizontal" in line or "move-box-horizontal" in line:
+            prettySol += getDirection(line)
+        elif "move-vertical" in line or "move-box-vertical" in line:
+            prettySol += getDirection(line)
+        elif "teleport" in line:
+            coords = extractCoords(line)
+            x,y = coords[1]
+            prettySol += "Teleport to position (%s, %s)\n" % (x, y)
+        elif "cost" in line:
+            prettySol += line[2:-12]
+    print(prettySol)
 
 if __name__ == "__main__":
     main(sys.argv[1:])
