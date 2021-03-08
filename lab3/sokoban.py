@@ -3,6 +3,8 @@
 import argparse
 import sys
 import codecs
+import os
+import re
 
 
 def parse_arguments(argv):
@@ -132,24 +134,15 @@ class pddlConverter(object):
         self.generateAdjV(loc1, loc2)
 
 
-def main(argv):
-    args = parse_arguments(argv)
+def getProblemInstance(board):
 
-    with codecs.open(args.i, 'r', "utf-8") as file:
-        board = SokobanGame(file.read().rstrip('\n'))
-
-    # TODO - Some of the things that you need to do:
-    #  1. (Previously) Have a domain.pddl file somewhere in disk that represents the Sokoban actions and predicates.
-    #  2. Generate an instance.pddl file from the given board, and save it to disk.
-    #  3. Invoke some classical planner to solve the generated instance.
-    #  3. Check the output and print the plan into the screen in some readable form.
     converter = pddlConverter()
     for x in range(board.h):
         for y in range(board.w):
 
             if(board.is_wall(x, y)):
-                # converter.writeWall(x, y)
-                continue
+                    # converter.writeWall(x, y)
+                    continue
             else:
                 converter.writeSquare(x, y)
                 if((not board.is_wall(x, y+1)) and (y+1 < board.w)):
@@ -166,37 +159,109 @@ def main(argv):
                     converter.writeAgent(x, y)
                 else:
                     continue
+
+    problem_instance="(define (problem SokobanProblem) \n (:domain TeleportingSokobanDomain)\n" # Write problem header
+    problem_instance+="(:objects \n"  # objects header
+    for obj in converter.problem_objects:
+            problem_instance+=obj  # objects
+            problem_instance+="\n"
+    problem_instance+=") \n"  # objects closure
+
+    problem_instance+="(:init \n" # init header
+    for state in converter.init_state:
+            problem_instance+=state  # initial states
+            problem_instance += "\n"
+    problem_instance+=") \n"  # init closure
+
+    problem_instance+="(:goal \n (and \n" #goal header
+    for goal in converter.goal_state: 
+            problem_instance+=goal  # goal states
+            problem_instance += "\n"
+    problem_instance+=") \n ) \n"  # goal closure
+
+    problem_instance+="\n)" # Write problem closure
+    return problem_instance
+
+
+def extractCoords(string):
+    result = []
+    numbers = re.findall(r'\d+', string)
+    for i in range(0, len(numbers), 2):
+        coords = (numbers[i], numbers[i+1])
+        result.append(coords)
+    return result
+
+
+def getDirection(string):
+    coords = extractCoords(string)
+    if len(coords)==4:
+        x1, y1 = coords[1]
+        x2, y2 = coords[2]
+    else:
+        x1, y1 = coords[0]
+        x2, y2 = coords[1]
+    
+    
+    if (x1 < x2):
+        return "Move right\n"
+    elif (x1 > x2):
+        return "Move left\n"
+    elif (y1 < y2):
+        return "Move down\n"
+    elif (y1 > y2):
+        return "Move up\n"
+
+def prettySolution(solution):
+    prettySol = ""    
+    for line in solution:
+        # print(line)
+        if "move_horizontal" in line or "push_horizontal" in line:
+            prettySol += getDirection(line)
+        elif "move_vertical" in line or "push_vertical" in line:
+            prettySol += getDirection(line)
+        elif "teleport" in line:
+            coords = extractCoords(line)
+            x,y = coords[1]
+            prettySol += "Teleport to position (%s, %s)\n" % (x, y)
+        elif "cost" in line:
+            prettySol += line[2:-12]
+    return prettySol
+
+
+def main(argv):
+    args = parse_arguments(argv)
+
+    with codecs.open("benchmarks/sasquatch/level50.sok", 'r', "utf-8") as file:
+        board = SokobanGame(file.read().rstrip('\n'))
+
+    # TODO - Some of the things that you need to do:
+    #  1. (Previously) Have a domain.pddl file somewhere in disk that represents the Sokoban actions and predicates.
+    #  2. Generate an instance.pddl file from the given board, and save it to disk.
+    #  3. Invoke some classical planner to solve the generated instance.
+    #  3. Check the output and print the plan into the screen in some readable form.
+    
     filename = "sokoban_problem.pddl"
-    with open(filename, "w") as output:
-        # Write problem header
-        print(
-            "(define (problem SokobanProblem) \n (:domain TeleportingSokobanDomain)\n", file=output)
-        # Write objects block
-        print(
-            "(:objects \n", file=output)  # objects header
-        for obj in converter.problem_objects:
-            print(obj, file=output)  # objects
-        print(
-            ") \n", file=output)  # objects closure
+    resultingInstance = getProblemInstance(board)
 
-        # Write init block
-        print(
-            "(:init \n", file=output)  # init header
-        for state in converter.init_state:
-            print(state, file=output)  # initial states
-        print(
-            ") \n", file=output)  # init closure
+    """ solve """
+    f = open(filename, "w")
+    f.write(resultingInstance)
+    f.close()
 
-        # Write goal block
-        print(
-            "(:goal \n (and \n", file=output)  # goal header
-        for goal in converter.goal_state:
-            print(goal, file=output)  # goal states
-        print(
-            ") \n ) \n", file=output)  # goal closure
+    os.system("sudo docker run --rm -v /home/magi.dalmau/Documents/git/miis-autonomous-systems-20-21/lab3:/lab3 aibasel/downward --plan-file /lab3/sas_plan --alias seq-sat-lama-2011 --overall-time-limit 60  /lab3/teleporting_sokoban_domain.pddl /lab3/sokoban_problem.pddl")
 
-        # Write problem closure
-        print("\n)", file=output)
+
+    """ read solution """
+    f = open('sas_plan', 'r')
+    lines = f.read().split("\n")
+    f.close()
+    prettySol = prettySolution(lines)
+    print(prettySol)
+
+    """ save solution """
+    f = open('final-plan.txt', 'w')
+    f.write(prettySol)
+    f.close()
 
 
 if __name__ == "__main__":
