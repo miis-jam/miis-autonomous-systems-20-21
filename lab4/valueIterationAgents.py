@@ -45,22 +45,15 @@ class ValueIterationAgent(ValueEstimationAgent):
 
         # Write value iteration code here
         "*** YOUR CODE HERE ***"
-        boolValueSet = util.Counter()
         allStates = mdp.getStates()
-        for iter in range(0, self.iterations):
-            for state in allStates:
-                possibleActions = mdp.getPossibleActions(state)
-                for action in possibleActions:
-                    stateAndProbs = mdp.getTransitionStatesAndProbs(state, action)
-                    newValue = 0
-                    for nextState, probability in stateAndProbs:
-                        newValue += probability * ( mdp.getReward(state, action, nextState) + discount * self.getValue(nextState))
-                    if newValue > self.getValue(state) or not boolValueSet[state]:
-                        self.values[state] = newValue
-                        boolValueSet[state] += 1
-                    
-        print(self.values)
 
+        for iter in range(0, self.iterations):
+            next_values = util.Counter()
+            for state in allStates:
+                if mdp.isTerminal(state):
+                    continue
+                next_values[state] = self.computeQValueFromValues(state, self.computeActionFromValues(state))
+            self.values = next_values
 
     def getValue(self, state):
         """
@@ -96,11 +89,9 @@ class ValueIterationAgent(ValueEstimationAgent):
             return None
         
         possibleActions = self.mdp.getPossibleActions(state)
-        if len(possibleActions)==1:
-            return possibleActions[0]
 
-        resultAction = ''
-        maxQ = 0
+        resultAction = possibleActions[0]
+        maxQ = self.computeQValueFromValues(state, resultAction)
         for action in possibleActions:
             qValue = self.computeQValueFromValues(state, action)
             if (qValue > maxQ):
